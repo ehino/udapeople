@@ -145,6 +145,8 @@ jobs:
             aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --output text >> inventory.txt
+            cat ~./project/.circleci/ansible/inventory.txt
+            
       - persist_to_workspace:
           root: ~/
           paths:
@@ -162,9 +164,13 @@ jobs:
               fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
       - attach_workspace:
           at: ~/tmp
-      # - run:
-      #     name: Install aws-cli 
-      #     command: apk add --no-cache aws cli
+      - run:
+          name: Install aws-cli 
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
       - run:
           name: Install dependencies
           command: |
@@ -185,9 +191,13 @@ jobs:
       - checkout
       - restore_cache:
           keys: [backend-build]
-      # - run:
-      #     name: Install aws-cli 
-      #     command: apk add --no-cache aws cli
+      - run:
+          name: Install aws-cli 
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
       - run:
           name: Run migrations
           command: |
