@@ -162,7 +162,9 @@ jobs:
               fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
       - attach_workspace:
           at: ~/tmp
-      - run: apk add  --no-cache aws cli
+      - run:
+          name: Install aws-cli 
+          command: apk add --no-cache aws cli
       - run:
           name: Install dependencies
           command: |
@@ -183,7 +185,9 @@ jobs:
       - checkout
       - restore_cache:
           keys: [backend-build]
-      - run: apk add  --no-cache aws cli
+      - run:
+          name: Install aws-cli 
+          command: apk add --no-cache aws cli
       - run:
           name: Run migrations
           command: |
