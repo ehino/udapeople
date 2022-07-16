@@ -7,6 +7,12 @@ commands:
       # Add parameter here   
     steps:
       - run:
+          name: Destroy frontend stack
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
           name: Destroy backend stack
           when: on_fail
           command: |
@@ -115,7 +121,7 @@ jobs:
           name: Install tar
           command: |
             yum install -y tar gzip
-            
+
       - run:
           name: Ensure back-end infrastructure exists
           command: |
@@ -145,6 +151,28 @@ jobs:
             - project/.circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure
       - destroy-environment
+
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+              # You can get this ID in the section where you registered the SSH Key
+              fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
+      - attach_workspace:
+          at: ~/tmp
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+
+      - run:
+          name: Configure server
+          command: |
+            # Your code here
+           # exit 1
+      # Here's where you will add some code to rollback on failure  
 
 workflows:
   default:
