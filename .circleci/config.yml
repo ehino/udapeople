@@ -7,20 +7,27 @@ commands:
       # Add parameter here   
     steps:
       - run:
-          name: Destroy frontend stack
+          name: Destroy stack
           when: on_fail
           command: |
             aws cloudformation delete-stack \
-              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" && 
-
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" && 
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
             aws cloudformation delete-stack \
-              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
-      # - run:
-      #     name: Destroy backend stack
-      #     when: on_fail
-      #     command: |
-      #       aws cloudformation delete-stack \
-      #         --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      # Add parameter here     
+    steps:
+      - run:
+          name: Revert migrations
+          # Add when this will run
+          command: |
+            cd ~/project/backend
+            npm install
+            npm run build
+            npm run migrations:revert
 
 
 jobs:
@@ -148,6 +155,7 @@ jobs:
           command: |
             aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text >> inventory.txt
             # cat ~./project/.circleci/ansible/inventory.txt
 
@@ -233,6 +241,7 @@ jobs:
           command: |
             export BACKEND_IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
             export API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
             echo "${API_URL}"
@@ -245,7 +254,8 @@ jobs:
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-      - destroy-environment      
+      - destroy-environment
+      - revert-migrations      
                     
   deploy-backend:
     docker:
@@ -283,6 +293,8 @@ jobs:
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
       - destroy-environment
+      - revert-migrations
+      
   smoke-test:
     docker:
       - image: python:3.7-alpine3.11
@@ -298,17 +310,12 @@ jobs:
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
             unzip awscli-bundle.zip
             ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-      # - run:
-      #     name: Get backend url
-      #     command: |
-      #       export BACKEND_IP=$(aws ec2 describe-instances \
-      #         --query 'Reservations[*].Instances[*].PublicIpAddress' \
-      #         --output text)
       - run:
-          name: Backend smoke test.
+          name: Backend smoke test
           command: |
             export BACKEND_IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
@@ -318,6 +325,7 @@ jobs:
             else
                 return 1
             fi
+            
       - run:
           name: Frontend smoke test.
           command: |
@@ -330,7 +338,8 @@ jobs:
             else
               return 1
             fi
-      - destroy-environment  
+      - destroy-environment
+      - revert-migrations  
 
 workflows:
   default:
