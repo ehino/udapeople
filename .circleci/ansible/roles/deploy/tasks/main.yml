@@ -1,17 +1,16 @@
-- name: "Move backend files to web server"
-  become: true
-  copy:
+
+- unarchive:
     src: /files/artifact.tar.gz
-    dest: "~/"
+    dest: ~/
     # owner: ubuntu
     # group: ubuntu
     # mode: 0777
 
-- name: "Unzip backend files"
-  become: true
-  shell: |
-    tar xvzf ~/artifact.tar.gz
-    # rm -rf ~/artifact.tar.gz
+# - name: "Move backend files to web server"
+#   become: true
+#   copy:
+#     src: /files/artifact.tar.gz
+#     dest: ~/
 
 - name: "install nodejs and npm"
   become: true
