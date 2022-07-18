@@ -11,13 +11,16 @@ commands:
           when: on_fail
           command: |
             aws cloudformation delete-stack \
-              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
-      - run:
-          name: Destroy backend stack
-          when: on_fail
-          command: |
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" && 
+
             aws cloudformation delete-stack \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
+      # - run:
+      #     name: Destroy backend stack
+      #     when: on_fail
+      #     command: |
+      #       aws cloudformation delete-stack \
+      #         --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
 
 
 jobs:
@@ -295,15 +298,18 @@ jobs:
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
             unzip awscli-bundle.zip
             ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+      # - run:
+      #     name: Get backend url
+      #     command: |
+      #       export BACKEND_IP=$(aws ec2 describe-instances \
+      #         --query 'Reservations[*].Instances[*].PublicIpAddress' \
+      #         --output text)
       - run:
-          name: Get backend url
+          name: Backend smoke test.
           command: |
             export BACKEND_IP=$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --output text)
-      - run:
-          name: Backend smoke test.
-          command: |
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
             if curl -s "${API_URL}/api/status" | grep "ok"
