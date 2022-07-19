@@ -181,7 +181,7 @@ jobs:
               # You can get this ID in the section where you registered the SSH Key
               fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
       - attach_workspace:
-          at: ~/tmp
+          at: ~/
       
       - run:
           name: Install dependencies
@@ -207,7 +207,7 @@ jobs:
 
   run-migrations:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
@@ -215,13 +215,10 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible
-            apk add --update nodejs
-            apk add --update npm
-            apk add curl
+            sudo apt install -y tar gzip curl
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip awscli-bundle.zip
-            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+            unzip -qq awscli-bundle.zip
+            sudo ./aws/install
 
       - run:
           name: Run migrations
@@ -287,7 +284,7 @@ jobs:
                     
   deploy-backend:
     docker:
-      - image: sleavely/node-awscli:14.x
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - add_ssh_keys:
@@ -297,16 +294,13 @@ jobs:
           at: ~/
       - restore_cache:
           keys: [backend-build]
-      # - run:
-      #     name: Install dependencies
-      #     command: |
-      #       apk add --update ansible
-      #       apk add --update nodejs
-      #       apk add --update npm
-      #       apk add curl
-      #       curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-      #       unzip awscli-bundle.zip
-      #       ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt install -y tar gzip curl ansible
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip -qq awscli-bundle.zip
+            sudo ./aws/install
       - run:
           name: Deploy backend
           command: |
@@ -342,6 +336,8 @@ jobs:
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
             unzip awscli-bundle.zip
             ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+      - attach_workspace:
+          at: ~/
       - run:
           name: Backend smoke test
           command: |
