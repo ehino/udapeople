@@ -1,16 +1,9 @@
 
-- unarchive:
-    src: /files/artifact.tar.gz
-    dest: ~/
-    # owner: ubuntu
-    # group: ubuntu
-    # mode: 0777
-
-# - name: "Move backend files to web server"
-#   become: true
-#   copy:
-#     src: /files/artifact.tar.gz
-#     dest: ~/
+- name: "Move backend files to web server"
+  become: true
+  unarchive:
+    src: files/artifact.tar.gz
+    dest: .
 
 - name: "install nodejs and npm"
   become: true
@@ -27,10 +20,7 @@
     production: yes
     state: present
 
-- name: "Executing pm2"
-  shell:
-    pm2 stop default
-
 - name: "Starting App"
-  shell:
+  shell: |
+    pm2 stop default
     pm2 start npm -- start
