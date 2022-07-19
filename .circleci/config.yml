@@ -187,12 +187,7 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update ansible nodejs npm aws-cli
-            # apk add --update nodejs
-            # apk add --update npm
-            # apk add curl
-            # curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            # unzip awscli-bundle.zip
-            # ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+            
 
       - run:
           name: Configure server
@@ -217,8 +212,8 @@ jobs:
           command: |
             sudo apt install -y tar gzip curl
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip -qq awscli-bundle.zip
-            sudo ./aws/install
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
 
       - run:
           name: Run migrations
@@ -299,8 +294,8 @@ jobs:
           command: |
             sudo apt install -y tar gzip curl ansible
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip -qq awscli-bundle.zip
-            sudo ./aws/install
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
       - run:
           name: Deploy backend
           command: |
