@@ -20,6 +20,10 @@
     production: yes
     state: present
 
+- name: "Executing Node"
+  shell: |
+    pm2 stop all
+
 - name: "Starting App"
   shell: |
     pm2 stop default
