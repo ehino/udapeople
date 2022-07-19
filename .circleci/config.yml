@@ -242,13 +242,19 @@ jobs:
 
   deploy-frontend:
     docker:
-      - image: sleavely/node-awscli:14.x
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
-      # - run:
-      #     name: Install dependencies
-      #     command: |
-      #       yum install -y tar gzip
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+            apk add --update nodejs
+            apk add --update npm
+            apk add curl
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
       - run:
           name: Get backend url
           command: |
