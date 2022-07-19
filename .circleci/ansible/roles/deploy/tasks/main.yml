@@ -22,5 +22,6 @@
 
 - name: "Starting App"
   shell: |
-    pm2 delete all
-    pm2 start npm -- start
+    cd ~/backend-app/dist
+    sudo pm2 stop default
+    sudo pm2 start main.js
