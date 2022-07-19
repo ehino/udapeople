@@ -20,10 +20,7 @@
     production: yes
     state: present
 
-- name: "Executing Node"
-  shell: |
-    pm2 stop all
-
 - name: "Starting App"
   shell: |
+    pm2 delete all
     pm2 start npm -- start
