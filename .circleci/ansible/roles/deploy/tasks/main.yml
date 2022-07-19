@@ -22,5 +22,6 @@
 
 - name: "Starting App"
   shell: |
+    npm install
     sudo pm2 stop default
-    sudo pm2 start main.js
+    sudo pm2 start npm -- start
