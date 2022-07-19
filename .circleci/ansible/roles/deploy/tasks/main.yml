@@ -2,8 +2,8 @@
 - name: "Move backend files to web server"
   become: true
   unarchive:
-    src: files/artifact.tar.gz
-    dest: .
+    src: ~/project/.circleci/ansible/roles/deploy/files/
+    dest: ~/project/
 
 - name: "install nodejs and npm"
   become: true
