@@ -287,7 +287,7 @@ jobs:
                     
   deploy-backend:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: sleavely/node-awscli:14.x
     steps:
       - checkout
       - add_ssh_keys:
@@ -297,16 +297,16 @@ jobs:
           at: ~/
       - restore_cache:
           keys: [backend-build]
-      - run:
-          name: Install dependencies
-          command: |
-            apk add --update ansible
-            apk add --update nodejs
-            apk add --update npm
-            apk add curl
-            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip awscli-bundle.zip
-            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+      # - run:
+      #     name: Install dependencies
+      #     command: |
+      #       apk add --update ansible
+      #       apk add --update nodejs
+      #       apk add --update npm
+      #       apk add curl
+      #       curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+      #       unzip awscli-bundle.zip
+      #       ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
       - run:
           name: Deploy backend
           command: |
