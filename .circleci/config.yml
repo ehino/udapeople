@@ -187,7 +187,6 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update ansible nodejs npm aws-cli
-            
 
       - run:
           name: Configure server
@@ -202,7 +201,7 @@ jobs:
 
   run-migrations:
     docker:
-      - image: circleci/node:13.8.0
+      - image: python:3.7-alpine3.16
     steps:
       - checkout
       - restore_cache:
@@ -210,10 +209,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt install -y tar gzip curl
-            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip awscli-bundle.zip
-            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+            apk add --update ansible nodejs npm aws-cli
 
       - run:
           name: Run migrations
@@ -279,7 +275,7 @@ jobs:
                     
   deploy-backend:
     docker:
-      - image: circleci/node:13.8.0
+      - image: python:3.7-alpine3.16
     steps:
       - checkout
       - add_ssh_keys:
@@ -292,10 +288,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt install -y tar gzip curl ansible
-            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip awscli-bundle.zip
-            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+            apk add --update ansible nodejs npm aws-cli
       - run:
           name: Deploy backend
           command: |
@@ -318,19 +311,13 @@ jobs:
       
   smoke-test:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: python:3.7-alpine3.16
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible
-            apk add --update nodejs
-            apk add --update npm
-            apk add curl
-            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-            unzip awscli-bundle.zip
-            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+            apk add --update ansible nodejs npm aws-cli
       - attach_workspace:
           at: ~/
       - run:
