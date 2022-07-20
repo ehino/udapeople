@@ -18,9 +18,10 @@
   become: true
   unarchive:
     src: files/artifact.tar.gz
-    dest: .
+    dest: ~/
 
 - name: "Starting App"
   shell: |
+    
     sudo pm2 delete all
     sudo pm2 start npm -- start
