@@ -204,13 +204,13 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      # - restore_cache:
-      #     keys: [backend-build]
+      
       - run:
           name: Install dependencies
           command: |
             sudo apt install -y tar gzip curl awscli
-            
+      - restore_cache:
+          keys: [backend-build]
       - run:
           name: Run migrations
           command: |
