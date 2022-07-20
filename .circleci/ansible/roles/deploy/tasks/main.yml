@@ -17,7 +17,7 @@
 - name: "Move backend files to web server"
   become: true
   unarchive:
-    src: files/artifact.tar.gz
+    src: artifact.tar.gz
     dest: ~/
 
 - name: "Starting App"
