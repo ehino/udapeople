@@ -222,7 +222,9 @@ jobs:
             cd backend
             # Run and save the migration output
             npm install
-            npm audit fix --audit-level=critical
+            npm audit fix --force
+            npm audit fix --audit-level=critical --force
+            npm audit --audit-level=critical
             npm run migrations >> migrations.txt
             cat migrations.txt
       - run:
