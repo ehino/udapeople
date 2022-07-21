@@ -18,7 +18,7 @@
   # become: true
   unarchive:
     src: ~/project/artifact.tar.gz
-    dest: ~/
+    dest: /home/ubuntu
 
 - name: "Starting App"
   shell: |
