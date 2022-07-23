@@ -325,7 +325,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible nodejs npm aws-cli curl
+            apk add --update ansible nodejs npm curl
       # - attach_workspace:
       #     at: ~/
       - run:
@@ -337,6 +337,7 @@ jobs:
               --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
+            sleep 20s
             if curl -s "${API_URL}/api/status" | grep "ok"
             then
                 return 0
