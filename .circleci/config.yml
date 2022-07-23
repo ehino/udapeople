@@ -325,7 +325,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible nodejs npm curl
+            apk add --update ansible nodejs npm aws-cli curl
       # - attach_workspace:
       #     at: ~/
       - run:
