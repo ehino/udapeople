@@ -1,38 +1,34 @@
 
-- name: "install nodejs and npm"
+- name: "show remote environment"
+  shell: env
+  
+- name: "copy zipped archive"
   become: true
-  apt:
-    name: ["nodejs", npm]
-    state: latest
-    update_cache: yes
+  synchronize:
+    src: ../../artifact.tar.gz
+    dest: /home/ubuntu/artifact.tar.gz
+    recursive: true
 
-- name: "install pm2"
+- name: Creates directory
+  file:
+    path: ~/backend_app
+    state: directory
+
+- name: Extract the zipped artifact
+  shell: tar xzvf artifact.tar.gz --directory backend_app
+
+- name: Install dependencies
+  args:
+    chdir: /home/ubuntu/backend_app
+  shell: npm install
+
+- name: "delete anything that might already be running"
   become: true
-  npm: 
-    name: pm2
-    global: yes
-    production: yes
-    state: present
+  ignore_errors: true
+  command: pm2 stop default
 
-- name: "Move backend files to web server"
-  # become: true
-  unarchive:
-    src: ~/project/artifact.tar.gz
-    dest: /home/ubuntu
-
-- name: "Starting App"
-  shell: |
-    sudo pm2 stop default
-    sudo pm2 start npm -- start
-  environment:
-      - MODE_ENV: production
-      - ENVIRONMENT: production
-      - TYPEORM_CONNECTION: "{{ lookup('env', 'TYPEORM_CONNECTION')}}"
-      - TYPEORM_ENTITIES: "{{ lookup('env', 'TYPEORM_ENTITIES')}}"
-      - TYPEORM_HOST: "{{ lookup('env', 'TYPEORM_HOST')}}"
-      - TYPEORM_PORT: 5432
-      - TYPEORM_USERNAME: "{{ lookup('env', 'TYPEORM_USERNAME')}}"
-      - TYPEORM_PASSWORD: "{{ lookup('env', 'TYPEORM_PASSWORD')}}"
-      - TYPEORM_DATABASE: "{{ lookup('env', 'TYPEORM_DATABASE')}}"
-      - TYPEORM_MIGRATIONS: "{{ lookup('env', 'TYPEORM_MIGRATIONS')}}"
-      - TYPEORM_MIGRATIONS_DIR: "{{ lookup('env', 'TYPEORM_MIGRATIONS_DIR')}}"
+- name: "start server"
+  become: true
+  args:
+    chdir: /home/ubuntu/backend_app
+  shell: pm2 start npm -- start

@@ -220,9 +220,6 @@ jobs:
             cd backend
             # Run and save the migration output
             npm install
-            # npm audit fix --force
-            # npm audit fix --audit-level=critical --force
-            # npm audit --audit-level=critical
             npm run migrations >> migrations.txt
             cat migrations.txt
       - run:
@@ -230,14 +227,16 @@ jobs:
           command: |
             if grep -q "has been executed successfully." ~/project/backend/migrations.txt
             then
+                echo "DB migration was successful, will update memstash..."
                 # If you are using kvdb.io, generate the bucket ID "9GE4jRtKznmVKRfvdBABBe" in your local terminal first
-                curl -k https://kvdb.io/e35qiGaaWti3hEc95XWf/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+                curl -k https://kvdb.io/TNe35qiGaaWti3hEc95XWf/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+            else
+              echo "DB migration failed, please verify setup! Probably the database already exists. Verify setup!"
             fi
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-
 
   deploy-frontend:
     docker:
@@ -259,15 +258,11 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text)
+            BACKEND_IP=$(curl --insecure https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7})
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
             export API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
             cat frontend/.env
-    
       - run:
           name: Deploy frontend objects
           command: |
@@ -282,69 +277,64 @@ jobs:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}    
                     
   deploy-backend: 
-    docker:
-      - image: python:3.7-alpine3.16
+    executor: python
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - backend-build
       - add_ssh_keys:
               # You can get this ID in the section where you registered the SSH Key
               fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
       - attach_workspace:
-          at: ~/
+          at: .
       - restore_cache:
           keys: [backend-build]
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible nodejs npm aws-cli curl
+            apk add --update tar gzip ansible curl rsync openssh nodejs npm bash
+            ansible --version
+      - aws-cli/setup:
+          profile-name: default
+      - run:
+          name: Zip the backend directory
+          command: |
+            pwd &&
+            ls -la
+            tar -C backend -czvf artifact.tar.gz .
       - run:
           name: Deploy backend
+          working_directory: ./.circleci/ansible
           command: |
-            cd backend
-            npm install
-            npm run build
-            cd ..
-            # Zip the directory
-            tar -C backend -czvf artifact.tar.gz .
-            mkdir -p ~/project/.circleci/ansible/roles/deploy/files/
-            # mv artifact.tar.gz .circleci/ansible/roles/deploy/files/
-            cd .circleci/ansible
-            echo "Contents  of the inventory.txt file is -------"
-            cat ~/project/.circleci/ansible/inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml
-      - destroy-environment:
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml -v
+      - destroy_environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      - revert-migrations:
+      - revert_migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       
   smoke-test:
-    docker:
-      - image: python:3.7-alpine3.16
+    executor: python
     steps:
       - checkout
+      - aws-cli/setup:
+          profile-name: default
       - run:
           name: Install dependencies
-          command: |
-            apk add --update ansible nodejs npm aws-cli curl
-      # - attach_workspace:
-      #     at: ~/
+          command: apk add --update curl nodejs npm
       - run:
-          name: Backend smoke test
+          name: Get backend url and Run backend smoke test
           command: |
-            export BACKEND_IP=$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text)
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            sleep 20s
-            if curl -s "${API_URL}/api/status" | grep "ok"
+            BACKEND_IP=$(curl --insecure https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7})
+            API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL=${API_URL}"
+            if curl "${API_URL}/api/status" | grep "ok"
             then
-                return 0
+              return 0
             else
-                return 1
+              return 1
             fi
-            
       - run:
           name: Frontend smoke test.
           command: |
@@ -352,16 +342,14 @@ jobs:
             echo ${URL} 
             if curl -s ${URL} | grep "Welcome"
             then
-                # Change this to 0 after the job fails
-              return 1
+              return 0
             else
               return 1
             fi
-      # - destroy-environment:
-      #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      # - revert-migrations:
-      #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}   
-
+      - destroy_environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert_migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 workflows:
   default:
     jobs:
