@@ -323,11 +323,18 @@ jobs:
       - checkout
       - run:
           name: Install dependencies
-          command: apk add --update curl nodejs npm
+          command: |
+            apk add --update curl nodejs npm
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
       - run:
           name: Get backend url and Run backend smoke test
           command: |
-            BACKEND_IP=$(curl --insecure https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7})
+            BACKEND_IP=$(aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text)
             API_URL="http://${BACKEND_IP}:3030"
             echo "API_URL=${API_URL}"
             if curl "${API_URL}/api/status" | grep "ok"
