@@ -31,7 +31,7 @@ commands:
             then
                 cd ~/project/backend
                 npm install
-                npm run migration:revert
+                npm run migrations:revert
             fi  
 
 jobs:
@@ -234,8 +234,6 @@ jobs:
               echo "DB migration failed, please verify setup! Probably the database already exists. Verify setup!"
             fi
       - destroy-environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      - revert-migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   deploy-frontend:
