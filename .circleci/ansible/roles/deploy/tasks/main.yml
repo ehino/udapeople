@@ -5,7 +5,7 @@
 - name: "copy zipped archive"
   become: true
   synchronize:
-    src: ../../artifact.tar.gz
+    src: ~/project/.circleci/ansible/roles/deploy/files/
     dest: /home/ubuntu/artifact.tar.gz
     recursive: true
 
