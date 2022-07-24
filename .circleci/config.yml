@@ -26,7 +26,7 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure  https://kvdb.io/e35qiGaaWti3hEc95XWf/migration_<< parameters.workflow_id >>)
+            SUCCESS=$(curl --insecure  https://kvdb.io/TNe35qiGaaWti3hEc95XWf/migration_<< parameters.workflow_id >>)
             if (( $SUCCESS == 1 ));
             then
                 cd ~/project/backend
@@ -296,7 +296,9 @@ jobs:
           command: |
             apk add --update tar gzip ansible curl rsync openssh nodejs npm bash
             ansible --version
-    
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
       - run:
           name: Zip the backend directory
           command: |
@@ -307,7 +309,7 @@ jobs:
           name: Deploy backend
           working_directory: ./.circleci/ansible
           command: |
-            cat inventory.txt
+            cat ~/project/.circleci/ansible/inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml -v
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
@@ -349,7 +351,7 @@ jobs:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-          
+
 workflows:
   default:
     jobs:
