@@ -295,8 +295,7 @@ jobs:
           command: |
             apk add --update tar gzip ansible curl rsync openssh nodejs npm bash
             ansible --version
-      - aws-cli/setup:
-          profile-name: default
+    
       - run:
           name: Zip the backend directory
           command: |
