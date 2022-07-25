@@ -35,6 +35,7 @@ commands:
             fi  
 
 jobs:
+
   build-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -138,22 +139,31 @@ jobs:
             yum install -y tar gzip
 
       - run:
-          name: Ensure back-end infrastructure exists
+          name: Deploy back-end infrastructure 
           command: |
             aws cloudformation deploy \
                 --template-file .circleci/files/backend.yml \
                 --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-                --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+                --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
+                --tags project=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
+      - run:
+          name: Save backend IP in kvdb
+          command: |
+            BACKEND_IP=$(aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:project,Values=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text)
+            curl https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7} -d ${BACKEND_IP} 
                 
       - run:
-          name: Ensure front-end infrastructure exist
+          name: Deploy frontend infrastructure
           command: |
             aws cloudformation deploy \
-                --template-file .circleci/files/frontend.yml \
-                --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-                --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
-                  
-              
+              --template-file .circleci/files/frontend.yml \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}  
+                     
       - run:
           name: Add back-end ip to ansible inventory
           command: |
@@ -164,24 +174,22 @@ jobs:
             cat ~/project/.circleci/ansible/inventory.txt
 
       - persist_to_workspace:
-          root: ~/
+          root: .
           paths:
             - project/.circleci/ansible/inventory.txt
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      - revert-migrations:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-
+      
   configure-infrastructure:
     docker:
-      - image: python:3.7-alpine3.16
+      - image: python:3.9.0-alpine
     steps:
       - checkout
       - add_ssh_keys:
               # You can get this ID in the section where you registered the SSH Key
               fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
       - attach_workspace:
-          at: ~/
+          at: .
       
       - run:
           name: Install dependencies
@@ -196,9 +204,7 @@ jobs:
       
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      - revert-migrations:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-
+      
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
@@ -238,9 +244,11 @@ jobs:
 
   deploy-frontend:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: python:3.9.0-alpine
     steps:
       - checkout
+      - restore_cache:
+          keys: [frontend-build]
       - run:
           name: Install dependencies
           command: |
@@ -251,8 +259,7 @@ jobs:
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
             unzip awscli-bundle.zip
             ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-      - restore_cache:
-          keys: [frontend-build]
+      
       - run:
           name: Get backend url
           command: |
@@ -262,11 +269,13 @@ jobs:
             export API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
             cat frontend/.env
       - run:
-          name: Deploy frontend objects
+          name: Rebuild frontend with backend API Url
           command: |
             cd frontend
-            npm install
             npm run build
+      - run:
+          name: Deploy frontend objects
+          command: |
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - destroy-environment:
@@ -276,7 +285,7 @@ jobs:
                     
   deploy-backend: 
     docker:
-      - image: python:3.7-alpine3.11
+      - image: python:3.9.0-alpine
     steps:
       - checkout
       - restore_cache:
@@ -287,8 +296,6 @@ jobs:
               fingerprints: ["87:39:cc:2b:10:4c:3f:7d:7d:d2:f7:35:e9:c1:00:ba"]
       - attach_workspace:
           at: .
-      - restore_cache:
-          keys: [backend-build]
       - run:
           name: Install dependencies
           command: |
@@ -304,10 +311,8 @@ jobs:
             npm install
             npm run build
             cd ..
-            # Zip the directory
             tar -C backend -czvf artifact.tar.gz .
-            mkdir -p ~/project/.circleci/ansible/roles/deploy/files/
-            # mv artifact.tar.gz .circleci/ansible/roles/deploy/files/
+            # mkdir -p ~/project/.circleci/ansible/roles/deploy/files/
             cd .circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat ~/project/.circleci/ansible/inventory.txt
@@ -319,7 +324,7 @@ jobs:
       
   smoke-test:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: python:3.9.0-alpine
     steps:
       - checkout
       - run:
@@ -332,10 +337,7 @@ jobs:
       - run:
           name: Get backend url and Run backend smoke test
           command: |
-            BACKEND_IP=$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text)
+            BACKEND_IP=$(curl --insecure https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7})
             API_URL="http://${BACKEND_IP}:3030"
             echo "API_URL=${API_URL}"
             if curl "${API_URL}/api/status" | grep "ok"
