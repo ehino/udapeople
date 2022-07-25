@@ -6,7 +6,7 @@
 
 - name: Extract the zipped artifact
   unarchive: 
-    src: ~/
+    src: ~/artifact.tar.gz
     dest: ~/backend_app
 
 - name: Install dependencies
