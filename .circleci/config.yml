@@ -272,6 +272,7 @@ jobs:
           name: Rebuild frontend with backend API Url
           command: |
             cd frontend
+            npm install
             npm run build
       - run:
           name: Deploy frontend objects
