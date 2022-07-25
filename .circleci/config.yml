@@ -189,7 +189,7 @@ jobs:
               # You can get this ID in the section where you registered the SSH Key
               fingerprints: ["91:06:0b:41:ab:a0:9d:29:35:ff:12:cc:14:f2:db:e1"]
       - attach_workspace:
-          at: .
+          at: ~/
       - run:
           name: Install dependencies
           command: |
