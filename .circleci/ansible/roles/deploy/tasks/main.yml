@@ -6,12 +6,12 @@
 
 - name: Extract the zipped artifact
   unarchive: 
-    src: ~/artifact.tar.gz
+    src: ~/project/artifact.tar.gz
     dest: ~/backend_app
 
 - name: Install dependencies
   args:
-    chdir: ~/project/backend_app
+    chdir: ~/backend_app
   command: |
     npm install
     pm2 stop default
