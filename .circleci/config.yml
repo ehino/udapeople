@@ -376,7 +376,7 @@ jobs:
           name: Export old WorkflowID in kvbd for cleanup phase
           command: |
             cd .circleci/files
-            export WorkflowID=$(aws cloudformation \
+            export OldWorkflowID=$(aws cloudformation \
               list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
               --no-paginate --output text)
             echo OldWorkflowID >> ~/OldWorkflowID.txt
@@ -389,7 +389,8 @@ jobs:
               --template-file .circleci/files/cloudfront.yml \
               --stack-name InitialStack \
               --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --tags project=udapeople
+              --tags project=udapeople-${CIRCLE_WORKFLOW_ID:0:7}
+
             echo OldWorkflowID: ${OldWorkflowID}
             echo Current Workflow ID: ${CIRCLE_WORKFLOW_ID:0:7}
       - destroy-environment:
@@ -417,10 +418,7 @@ jobs:
                     list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
                     --no-paginate --output text)
             echo OldWorkflowID: "${OldWorkflowID}"
-            echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"          
-      - run:
-          name: Remove old stacks and files
-          command: |
+            echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"
             if [[ "${CIRCLE_WORKFLOW_ID:0:7}" != "${OldWorkflowID}" ]]
             then
               echo ---------Delete Confirmed------------------
@@ -429,7 +427,7 @@ jobs:
               aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
             else
               echo ---------Cannot Cleanup-------------------
-            fi
+            fi          
 workflows:
   default:
     jobs:
