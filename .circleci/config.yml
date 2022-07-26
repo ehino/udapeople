@@ -390,9 +390,10 @@ jobs:
               --no-paginate --output text)
 
             echo OldWorkflowID >> ~/OldWorkflowID.txt
-
+            
+            cd .circleci/files
             aws cloudformation deploy \
-              --template-file .circleci/files/cloudfront.yml \
+              --template-file cloudfront.yml \
               --stack-name InitialStack-${OldWorkflowID} \
               --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
