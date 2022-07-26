@@ -368,28 +368,20 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update curl nodejs npm
+            apk add --update curl
             curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
             unzip awscli-bundle.zip
             ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-      # - run:
-      #     name: Store old WorkflowID in kvbd for cleanup phase
-      #     command: |
-      #       cd .circleci/files
-      #       WorkflowID=$(aws cloudformation \
-      #         list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
-      #         --no-paginate --output text)
-      #       curl https://kvdb.io/TNe35qiGaaWti3hEc95XWf/WorkflowID -d $WorkflowID
- 
       - run:
-          name: Export old stack
+          name: Store old WorkflowID in kvbd for cleanup phase
           command: |
             cd .circleci/files
-            export OldWorkflowID=$(aws cloudformation \
+            WorkflowID=$(aws cloudformation \
               list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
               --no-paginate --output text)
             echo OldWorkflowID >> ~/OldWorkflowID.txt
             cat ~/OldWorkflowID.txt
+            curl https://kvdb.io/TNe35qiGaaWti3hEc95XWf/WorkflowID -d $WorkflowID
       - run:
           name: Update cloudfront distribution
           command: |
@@ -400,10 +392,48 @@ jobs:
               --tags project=udapeople
             echo OldWorkflowID: ${OldWorkflowID}
             echo Current Workflow ID: ${CIRCLE_WORKFLOW_ID:0:7}
-      # - destroy_environment:
-      #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      # - revert_migrations:
-      #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy_environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert_migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+
+  cleanup:
+    docker:
+      - image: python:3.9.0-alpine
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update curl
+            curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+            unzip awscli-bundle.zip
+            ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+      - run:
+          name: Get old stack workflow id
+          command: |
+            # Fetch the Old workflow ID
+            export OldWorkflowID=$(aws cloudformation \
+                    list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+                    --no-paginate --output text)
+            echo OldWorkflowID: "${OldWorkflowID}"
+            echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
+            # Fetch the stack names          
+            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+                    --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
+            echo Stack names: "${STACKS[@]}"          
+      - run:
+          name: Remove old stacks and files
+          command: |
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              echo ---------Delete Confirmed------------------
+              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+              aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
+              aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
+            else
+              echo ---------Cannot Cleanup-------------------
+            fi
 
 workflows:
   default:
