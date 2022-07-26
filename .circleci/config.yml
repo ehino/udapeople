@@ -393,7 +393,8 @@ jobs:
             echo Current Workflow ID: ${CIRCLE_WORKFLOW_ID:0:7}
       - persist_to_workspace:
           root: ~/
-          paths: OldWorkflowID.txt
+          paths: 
+            - OldWorkflowID.txt
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
@@ -418,7 +419,7 @@ jobs:
           command: |
             # Fetch the Old workflow ID
             cat ~/OldWorkflowID.txt
-            OldWorkflowID = "$(cat ~/OldWorkflowID.txt)"
+            export OldWorkflowID = "$(cat ~/OldWorkflowID.txt)"
             echo OldWorkflowID: "${OldWorkflowID}"
             echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"
             if [[ "${CIRCLE_WORKFLOW_ID:0:7}" != "${OldWorkflowID}" ]]
