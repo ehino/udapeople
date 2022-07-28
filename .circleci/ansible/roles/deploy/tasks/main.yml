@@ -18,4 +18,4 @@
 
 - name: start pm2
   command: 
-    cmd: pm2 start npm -- start 
+    cmd: pm2 start npm -- start
