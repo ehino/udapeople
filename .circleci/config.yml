@@ -184,18 +184,18 @@ jobs:
       
   configure-infrastructure:
     docker:
-      - image: python:3.7-alpine3.16
+      - image: python:3.10-alpine3.16
     steps:
       - checkout
       - add_ssh_keys:
               # You can get this ID in the section where you registered the SSH Key
               fingerprints: ["2e:87:4e:fc:c0:1c:f8:e0:1a:b0:3b:7f:9e:0f:2c:1e"]
-      - attach_workspace:
-          at: ~/
       - run:
           name: Install dependencies
           command: |
             apk add --update ansible nodejs npm aws-cli
+      - attach_workspace:
+          at: ~/
       - run:
           name: Configure server
           command: |
@@ -245,11 +245,11 @@ jobs:
 
   deploy-frontend:
     docker:
-      - image: python:3.9.0-alpine
+      - image: python:3.10-alpine3.16
     steps:
       - checkout
-      - restore_cache:
-          keys: [frontend-build]
+      - attach_workspace:
+          at: ~/
       - run:
           name: Install dependencies
           command: |
@@ -264,12 +264,13 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            BACKEND_IP=$(curl --insecure https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7})
+            export BACKEND_IP=$(curl --insecure https://kvdb.io/TNe35qiGaaWti3hEc95XWf/backend_ip_${CIRCLE_WORKFLOW_ID:0:7})
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
             export API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
             cat frontend/.env
-            
+      - restore_cache:
+          keys: [frontend-build]
       - run:
           name: Deploy frontend objects
           command: |

@@ -1,11 +1,21 @@
-
 - name: Extract the zipped artifact
   unarchive: 
-    src: ~/project/artifact.tar.gz
+    src:  ~/project/artifact.tar.gz
     dest: ~/
 
 - name: Install dependencies
-  shell: |
-    npm install
-    pm2 stop default
-    pm2 start npm -- start
+  become: yes
+  apt:
+    name: npm
+    state: latest
+    update_cache: yes
+
+- name: Install pm2
+  become: yes
+  npm: 
+    name: pm2
+    global: yes
+
+- name: start pm2
+  command: 
+    cmd: pm2 start npm -- start 
